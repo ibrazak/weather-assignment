@@ -6,11 +6,21 @@
 //
 
 import UIKit
+import Combine
 
 class CitiesListViewController: UIViewController {
 
     @IBOutlet weak var tableView: UITableView!
+    lazy var searchBar: UISearchBar = {
+        let sb = UISearchBar()
+        sb.delegate = self
+        sb.placeholder = "Type to search"
+        sb.returnKeyType = .default
+        sb.showsCancelButton = true
+        return sb
+    }()
     
+    private var bindings: Set<AnyCancellable> = .init()
     private let coordinator: MainCoordinator
     private let cellID: String = "cellID"
     private let citiesViewModel: CitiesViewModel
@@ -31,9 +41,10 @@ class CitiesListViewController: UIViewController {
         
         setupTableView()
         setupViewModel()
+        setupSearchBar()
     }
     
-    func setupViewModel() {
+    private func setupViewModel() {
         self.cityVMs = citiesViewModel.getCitiesViewModels()
         if let err = citiesViewModel.error, err != "" {
             let alert = UIAlertController(title: err, message: nil, preferredStyle: .alert)
@@ -41,6 +52,15 @@ class CitiesListViewController: UIViewController {
             alert.addAction(alertAction)
             self.present(alert, animated: true)
         }
+        citiesViewModel.updateViewsSubject
+            .sink { [weak self] err in
+                self?.cityVMs = self?.citiesViewModel.getCitiesViewModels() ?? []
+                self?.tableView.reloadData()
+            }.store(in: &bindings)
+    }
+    
+    private func setupSearchBar() {
+        navigationItem.titleView = searchBar
     }
 
     private func setupTableView() {
@@ -66,4 +86,19 @@ extension CitiesListViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         UITableView.automaticDimension
     }
+}
+
+extension CitiesListViewController: UISearchBarDelegate {
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        citiesViewModel.search(searchText)
+    }
+    
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        searchBar.resignFirstResponder()
+    }
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        searchBar.resignFirstResponder()
+    }
+    
 }
