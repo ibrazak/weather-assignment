@@ -42,7 +42,7 @@ class CitiesViewModel {
     
     func search(_ searchTerm: String) {
         isFiltering = searchTerm == "" ? false : true
-        filteredCities = allCities.filter({ $0.city?.name.contains(searchTerm) == true })
+        filteredCities = allCities.filter({ $0.city?.name.lowercased().contains(searchTerm.lowercased()) == true })
         updateViewsSubject.send(nil)
     }
     
